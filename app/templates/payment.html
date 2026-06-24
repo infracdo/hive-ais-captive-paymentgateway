@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}Payment Required - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="payment-container">
+    <div class="card">
+        <div class="card-header">
+            <h1><i class="md md-warning"></i> Account Payment Required</h1>
+            <p>Your internet service is temporarily suspended</p>
+        </div>
+        
+        <div class="card-body">
+            <div class="alert alert-warning">
+                <i class="md md-info"></i>
+                <strong>Service Suspended:</strong> Your account has an outstanding balance. 
+                Please make a payment to restore your internet service.
+            </div>
+            
+            {% if user %}
+            <!-- User-specific information from accounting API -->
+            <div class="info-section">
+                <h4><i class="md md-account-circle"></i> Session Information</h4>
+                <div class="info-item">
+                    <strong>Username:</strong>
+                    <span class="text-primary"><strong>{{ user.user_name }}</strong></span>
+                </div>
+                <div class="info-item">
+                    <strong>Session ID:</strong>
+                    <span>{{ user.acct_session_id }}</span>
+                </div>
+                <div class="info-item">
+                    <strong>Assigned IP:</strong>
+                    <span>{{ user.framed_ip_address }}</span>
+                </div>
+                {% if user.calling_station_id %}
+                <div class="info-item">
+                    <strong>MAC Address:</strong>
+                    <span>{{ user.calling_station_id }}</span>
+                </div>
+                {% endif %}
+                {% if user.nas_identifier %}
+                <div class="info-item">
+                    <strong>Connected to:</strong>
+                    <span>{{ user.nas_identifier }} ({{ user.nas_ip_address }})</span>
+                </div>
+                {% endif %}
+                <div class="info-item">
+                    <strong>Session Status:</strong>
+                    <span class="text-warning"><strong>{{ user.acct_status_type }}</strong></span>
+                </div>
+                <div class="info-item">
+                    <strong>Account Status:</strong>
+                    <span class="text-danger"><strong>OVERDUE - PAYMENT REQUIRED</strong></span>
+                </div>
+            </div>
+            {% else %}
+            <!-- No user found in accounting records -->
+            <div class="info-section">
+                <div class="alert alert-info">
+                    <i class="md md-info"></i>
+                    <strong>Note:</strong> Unable to retrieve your session information. 
+                    Please proceed with payment or contact customer support.
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Payment Instructions -->
+            <div class="info-section">
+                <h4><i class="md md-payment"></i> How to Make Payment</h4>
+                <div class="info-item">
+                    <strong>Step 1:</strong>
+                    <span>Click the "Make Payment" button below</span>
+                </div>
+                <div class="info-item">
+                    <strong>Step 2:</strong>
+                    <span>Complete your payment through our secure payment portal</span>
+                </div>
+                <div class="info-item">
+                    <strong>Step 3:</strong>
+                    <span>Your service will be restored within 5-10 minutes after payment confirmation</span>
+                </div>
+            </div>
+            
+            <!-- Payment Button -->
+            <div class="text-center">
+                {% if user and user.user_name %}
+                <!-- Simulate payment button (calls API to clear overdue) -->
+                <button id="paymentBtn" class="btn-payment" onclick="processPayment('{{ user.user_name }}')">
+                    <i class="md md-credit-card"></i> <span id="btnText">Simulate Payment (Clear Overdue)</span>
+                </button>
+                <div id="paymentMessage" style="margin-top: 20px; display: none;"></div>
+                {% else %}
+                <!-- Fallback to external payment URL if no user found -->
+                <a href="{{ payment_url }}" class="btn-payment" target="_blank">
+                    <i class="md md-credit-card"></i> Make Payment Now
+                </a>
+                {% endif %}
+            </div>
+            
+            <!-- Payment Processing Modal -->
+            <div id="paymentModal" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7);">
+                <div style="position: relative; margin: 10% auto; padding: 30px; width: 90%; max-width: 500px; background-color: white; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); text-align: center;">
+                    <div style="margin-bottom: 20px;">
+                        <i class="md md-check-circle" style="font-size: 80px; color: #4CAF50;"></i>
+                    </div>
+                    <h2 style="color: #333; margin-bottom: 15px;">Payment Received!</h2>
+                    <p style="font-size: 18px; color: #666; margin-bottom: 20px;">
+                        Thank you for your payment. We are now reconnecting your internet service.
+                    </p>
+                    <div style="margin: 20px 0;">
+                        <div class="spinner" style="border: 4px solid #f3f3f3; border-top: 4px solid #4CAF50; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+                    </div>
+                    <p id="modalCountdown" style="font-size: 16px; color: #999; margin-top: 15px;">
+                        Checking service status... <span id="countdownSeconds">20</span>s
+                    </p>
+                </div>
+            </div>
+            
+            <style>
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
+            
+            <!-- Contact Information -->
+            <div class="info-section">
+                <h4><i class="md md-phone"></i> Need Help?</h4>
+                <div class="info-item">
+                    <strong>Customer Support:</strong>
+                    <span>Contact us for assistance with your payment</span>
+                </div>
+                <div class="info-item">
+                    <strong>Website:</strong>
+                    <span><a href="{{ payment_url }}" target="_blank">{{ payment_url }}</a></span>
+                </div>
+            </div>
+            
+            <!-- Debug Information (only shown in debug mode) -->
+            {% if client_info %}
+            <div class="debug-info">
+                <h5><i class="md md-bug-report"></i> Connection Information</h5>
+                <div class="debug-item">
+                    <strong>Your IP:</strong> <code>{{ client_info.client_ip }}</code>
+                </div>
+                <div class="debug-item">
+                    <strong>Timestamp:</strong> <code>{{ client_info.timestamp }}</code>
+                </div>
+                {% if client_info.path %}
+                <div class="debug-item">
+                    <strong>Path:</strong> <code>{{ client_info.path }}</code>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="footer-text">
+        <p>{{ app_name }} &copy; 2025</p>
+        <p>Powered by <a href="https://www.coronatel.com/" target="_blank">CoronaTel</a></p>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let autoReloadInterval = null;
+    
+    function processPayment(username) {
+        const btn = document.getElementById('paymentBtn');
+        const btnText = document.getElementById('btnText');
+        const messageDiv = document.getElementById('paymentMessage');
+        
+        // Show modal immediately
+        showPaymentModal();
+        
+        // Disable button and show loading state
+        btn.disabled = true;
+        btnText.innerHTML = '<i class="md md-hourglass"></i> Processing Payment...';
+        messageDiv.style.display = 'none';
+        
+        // Call the API to clear overdue status
+        fetch('/api/clear-overdue', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username: username })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Success - modal already showing, just continue countdown
+                console.log('Payment processed successfully');
+            } else {
+                // Error - hide modal and show error message
+                const modal = document.getElementById('paymentModal');
+                modal.style.display = 'none';
+                if (autoReloadInterval) {
+                    clearInterval(autoReloadInterval);
+                    autoReloadInterval = null;
+                }
+                
+                messageDiv.className = 'alert alert-danger';
+                messageDiv.innerHTML = '<i class="md md-close"></i> <strong>Error:</strong> ' + (data.error || 'Payment processing failed');
+                messageDiv.style.display = 'block';
+                btn.disabled = false;
+                btnText.innerHTML = '<i class="md md-credit-card"></i> Retry Payment';
+            }
+        })
+        .catch(error => {
+            // Network error - hide modal and show error
+            const modal = document.getElementById('paymentModal');
+            modal.style.display = 'none';
+            if (autoReloadInterval) {
+                clearInterval(autoReloadInterval);
+                autoReloadInterval = null;
+            }
+            
+            messageDiv.className = 'alert alert-danger';
+            messageDiv.innerHTML = '<i class="md md-close"></i> <strong>Error:</strong> Network error. Please check your connection and try again.';
+            messageDiv.style.display = 'block';
+            btn.disabled = false;
+            btnText.innerHTML = '<i class="md md-credit-card"></i> Retry Payment';
+            console.error('Payment error:', error);
+        });
+    }
+    
+    function showPaymentModal() {
+        // Show the modal
+        const modal = document.getElementById('paymentModal');
+        modal.style.display = 'block';
+        
+        // Start countdown
+        let countdown = 20;
+        const countdownElement = document.getElementById('countdownSeconds');
+        
+        autoReloadInterval = setInterval(function() {
+            countdown--;
+            countdownElement.textContent = countdown;
+            
+            if (countdown <= 0) {
+                clearInterval(autoReloadInterval);
+                // Reload the page
+                window.location.reload();
+            }
+        }, 1000);
+    }
+    
+    // Auto-refresh page every 2 minutes to check if service is restored (only if payment not yet processed)
+    setTimeout(function() {
+        if (!autoReloadInterval) {
+            window.location.reload();
+        }
+    }, 120000); // 2 minutes
+</script>
+{% endblock %}

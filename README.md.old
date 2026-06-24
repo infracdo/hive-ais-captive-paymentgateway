@@ -1,0 +1,282 @@
+# Apollo Captive Payment Gateway
+
+FastAPI-based payment portal server for ISP overdue customers with captive portal detection.
+
+## Features
+
+- ✅ **Captive Portal Detection** - Auto-detects Android, iOS, Windows, macOS devices
+- ✅ **HTTP Header Debugging** - Logs all incoming headers for troubleshooting
+- ✅ **Client IP Extraction** - Extracts real client IP from MikroTik/proxy headers
+- ✅ **Beautiful Payment Page** - Responsive, modern UI
+- ✅ **Docker Ready** - Multi-stage build for production
+- ✅ **Health Checks** - Built-in health check endpoint
+- ✅ **Environment Configuration** - Easy configuration via environment variables
+
+## Quick Start
+
+### Local Development
+
+1. **Install dependencies:**
+```bash
+pip install -r requirements.txt
+```
+
+2. **Run the server:**
+```bash
+python main.py
+```
+
+3. **Access the portal:**
+- Payment Portal: http://localhost:8080
+- Health Check: http://localhost:8080/health
+- Config: http://localhost:8080/api/config
+- API Docs: http://localhost:8080/docs
+
+### Docker
+
+1. **Build the image:**
+```bash
+docker build -t apollo-captive-paymentgateway .
+```
+
+2. **Run the container:**
+```bash
+docker run -d \
+  --name apollo-captive-paymentgateway \
+  -p 8080:8080 \
+  -e PAYMENT_URL=https://www.coronatel.com/ \
+  apollo-captive-paymentgateway
+```
+
+### Docker Compose
+
+```bash
+docker-compose up -d
+```
+
+## Docker Hub Deployment
+
+### 1. Tag the Image
+
+```bash
+# Replace 'yourusername' with your Docker Hub username
+docker tag apollo-captive-paymentgateway yourusername/apollo-captive-paymentgateway:latest
+docker tag apollo-captive-paymentgateway yourusername/apollo-captive-paymentgateway:1.0.0
+```
+
+### 2. Login to Docker Hub
+
+```bash
+docker login
+```
+
+### 3. Push to Docker Hub
+
+```bash
+docker push yourusername/apollo-captive-paymentgateway:latest
+docker push yourusername/apollo-captive-paymentgateway:1.0.0
+```
+
+### 4. Pull and Run on Production Server
+
+```bash
+docker pull yourusername/apollo-captive-paymentgateway:latest
+
+docker run -d \
+  --name apollo-captive-paymentgateway \
+  --restart unless-stopped \
+  -p 10.42.4.19:8080:8080 \
+  -e PAYMENT_URL=https://www.coronatel.com/ \
+  yourusername/apollo-captive-paymentgateway:latest
+```
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PAYMENT_URL` | URL for the "Make Payment" button | `https://www.coronatel.com/` |
+| `HOST` | Server bind address | `0.0.0.0` |
+| `PORT` | Server port | `8080` |
+
+## MikroTik Integration
+
+The server extracts client IP from these headers (in order):
+1. `X-Forwarded-For` (first IP in list)
+2. `X-Real-IP`
+3. `CF-Connecting-IP` (Cloudflare)
+4. `True-Client-IP`
+5. Direct client IP (fallback)
+
+### MikroTik Configuration
+
+Configure your MikroTik router to redirect HTTP traffic to this server:
+
+```bash
+# NAT redirect HTTP to payment gateway
+/ip firewall nat
+add chain=dstnat \
+    src-address-list=overdue-users \
+    protocol=tcp \
+    dst-port=80 \
+    action=dst-nat \
+    to-addresses=10.42.4.19 \
+    to-ports=8080
+```
+
+## HTTP Header Debugging
+
+All incoming requests log complete header information:
+
+```
+2025-11-07 10:30:15 - __main__ - DEBUG - ================================================================================
+2025-11-07 10:30:15 - __main__ - DEBUG - 📨 INCOMING REQUEST HEADERS:
+2025-11-07 10:30:15 - __main__ - DEBUG -   host: 10.42.4.19:8080
+2025-11-07 10:30:15 - __main__ - DEBUG -   x-forwarded-for: 10.88.1.100
+2025-11-07 10:30:15 - __main__ - DEBUG -   user-agent: Mozilla/5.0 (Android; Mobile)
+2025-11-07 10:30:15 - __main__ - DEBUG - ================================================================================
+2025-11-07 10:30:15 - __main__ - INFO - ================================================================================
+2025-11-07 10:30:15 - __main__ - INFO - 🔍 CLIENT INFORMATION EXTRACTED:
+2025-11-07 10:30:15 - __main__ - INFO -   📍 Client IP: 10.88.1.100
+2025-11-07 10:30:15 - __main__ - INFO -   🌐 User Agent: Mozilla/5.0 (Android; Mobile)
+2025-11-07 10:30:15 - __main__ - INFO - ================================================================================
+```
+
+## Extending the Application
+
+### Get User Details by IP
+
+To display personalized payment information and QR codes, integrate with your device provisioner API:
+
+```python
+import httpx
+
+async def get_user_by_ip(client_ip: str):
+    """Query device provisioner for user details"""
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"http://device-provisioner:8000/api/v1/pppoe/users/by-ip/{client_ip}"
+        )
+        if response.status_code == 200:
+            return response.json()
+    return None
+
+# Use in payment_portal function:
+user_details = await get_user_by_ip(client_info['client_ip'])
+if user_details:
+    # Display personalized QR code, username, amount due, etc.
+    pass
+```
+
+### Add Payment QR Code
+
+Install `qrcode` library and generate QR codes:
+
+```bash
+pip install qrcode[pil]
+```
+
+```python
+import qrcode
+import io
+import base64
+
+def generate_payment_qr(user_data):
+    """Generate QR code for payment"""
+    payment_data = f"Payment:{user_data['username']}:{user_data['amount']}"
+    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    qr.add_data(payment_data)
+    qr.make(fit=True)
+    
+    img = qr.make_image(fill_color="black", back_color="white")
+    buffer = io.BytesIO()
+    img.save(buffer, format='PNG')
+    img_str = base64.b64encode(buffer.getvalue()).decode()
+    return f"data:image/png;base64,{img_str}"
+```
+
+## Project Structure
+
+```
+apollo-captive-paymentgateway/
+├── main.py                 # FastAPI application
+├── requirements.txt        # Python dependencies
+├── Dockerfile             # Docker image build
+├── docker-compose.yml     # Docker Compose config
+├── .dockerignore          # Docker build exclusions
+├── .gitignore             # Git exclusions
+├── README.md              # This file
+└── ai.spec               # Original specification
+```
+
+## API Endpoints
+
+### `GET /` or `GET /{full_path:path}`
+- **Description**: Main payment portal
+- **Response**: HTML payment page
+- **Headers Logged**: All incoming headers
+
+### `GET /health`
+- **Description**: Health check endpoint
+- **Response**: JSON with status and timestamp
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-11-07T10:30:15.123456",
+  "service": "apollo-captive-paymentgateway"
+}
+```
+
+### `GET /api/config`
+- **Description**: Get current configuration
+- **Response**: JSON with config values
+```json
+{
+  "payment_url": "https://www.coronatel.com/",
+  "host": "0.0.0.0",
+  "port": 8080,
+  "captive_portal_urls": [...]
+}
+```
+
+## Captive Portal Detection
+
+The server automatically detects captive portal checks from:
+
+- **Android**: `/generate_204`, `/gen_204`
+- **iOS/macOS**: `/hotspot-detect.html`
+- **Windows**: `/connecttest.txt`, `/redirect`
+- **Firefox**: `/success.txt`
+- **Ubuntu**: `/canonical.html`
+
+When detected, the device automatically opens a browser with the payment page.
+
+## Troubleshooting
+
+### Server not starting
+```bash
+# Check if port 8080 is in use
+netstat -tulpn | grep 8080
+
+# Run on different port
+PORT=9090 python main.py
+```
+
+### Client IP shows as 127.0.0.1
+- Check if MikroTik is sending `X-Forwarded-For` header
+- Review debug logs for actual headers received
+- Verify NAT configuration on MikroTik
+
+### Captive portal not detected
+- Check device is using overdue IP range (10.88.0.0/16)
+- Verify HTTP traffic is redirected to this server
+- Check logs for captive portal detection URLs
+
+## License
+
+Part of the Apollo ISP Management System
+
+## Support
+
+For issues and questions:
+- Email: support@coronatel.com
+- Phone: +1 (234) 567-890

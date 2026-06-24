@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{% block title %}{{ app_name }}{% endblock %}</title>
+
+    <!-- BEGIN META -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Payment Portal">
+    <!-- END META -->
+
+    <!-- BEGIN STYLESHEETS -->
+    <link type="text/css" rel="stylesheet" href="/static/css/fonts.css" />
+    <link type="text/css" rel="stylesheet" href="/static/css/theme-default/bootstrap.css" />
+    <link type="text/css" rel="stylesheet" href="/static/css/theme-default/materialadmin.css" />
+    <link type="text/css" rel="stylesheet" href="/static/css/theme-default/font-awesome.min.css" />
+    <link type="text/css" rel="stylesheet" href="/static/css/theme-default/material-design-iconic-font.min.css" />
+    {% block extra_css %}{% endblock %}
+    <!-- END STYLESHEETS -->
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+        
+        .payment-container {
+            max-width: 600px;
+            width: 90%;
+            margin: 20px auto;
+        }
+        
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .card-header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 500;
+        }
+        
+        .card-header p {
+            margin: 10px 0 0 0;
+            opacity: 0.95;
+            font-size: 16px;
+        }
+        
+        .card-body {
+            padding: 40px 30px;
+            background: white;
+        }
+        
+        .alert {
+            border-radius: 10px;
+            border: none;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .alert-warning {
+            background: linear-gradient(135deg, #FFD89B 0%, #19547B 100%);
+            color: white;
+        }
+        
+        .alert-success {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            color: white;
+        }
+        
+        .alert-danger {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+        }
+        
+        .alert-info {
+            background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+            color: white;
+        }
+        
+        .alert i {
+            font-size: 24px;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+        
+        .info-section {
+            margin: 30px 0;
+        }
+        
+        .info-section h4 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        .info-item {
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        
+        .info-item strong {
+            color: #333;
+            display: inline-block;
+            min-width: 140px;
+        }
+        
+        .info-item span {
+            color: #666;
+        }
+        
+        .btn-payment {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            border-radius: 50px;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin: 20px 0;
+            cursor: pointer;
+        }
+        
+        .btn-payment:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+            color: white;
+            text-decoration: none;
+        }
+        
+        .btn-payment:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-payment i {
+            margin-right: 10px;
+        }
+        
+        .debug-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .debug-info h5 {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .debug-info .debug-item {
+            padding: 5px 0;
+        }
+        
+        .debug-info code {
+            background: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #667eea;
+        }
+        
+        .footer-text {
+            text-align: center;
+            color: white;
+            margin-top: 30px;
+            opacity: 0.9;
+        }
+        
+        .footer-text a {
+            color: white;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    {% block content %}{% endblock %}
+
+    <!-- BEGIN JAVASCRIPT -->
+    <script src="/static/js/libs/jquery/jquery-1.11.2.min.js"></script>
+    <script src="/static/js/libs/bootstrap/bootstrap.min.js"></script>
+    {% block extra_js %}{% endblock %}
+    <!-- END JAVASCRIPT -->
+</body>
+</html>

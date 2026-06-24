@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  captive-payment-gateway:
+    image: marcandres888/apollo-captive-paymentgateway:latest
+    container_name: apollo-captive-paymentgateway
+    ports:
+      - "8082:8080"
+    environment:
+      - PAYMENT_URL=https://www.coronatel.com/
+      - HOST=0.0.0.0
+      - PORT=8080
+      # Apollo Device Provisioner API
+      # Base URL (without /api/v1)
+      - APOLLO_PROVISIONER_URL=http://10.42.29.80:8000
+      - APOLLO_PROVISIONER_API_PREFIX=/api/v1
+      - APOLLO_PROVISIONER_TIMEOUT=10
+
+    restart: unless-stopped
+    networks:
+      - portainer_default
+    
+
+networks:
+  portainer_default:
+    external: true
