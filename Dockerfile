@@ -16,8 +16,8 @@ WORKDIR /app
 COPY --from=builder /root/.local /root/.local
 
 # Copy application code
-#COPY app/ ./app/
-COPY ./app ./app
+COPY app/ ./app/
+#COPY ./app ./app
 
 # Make sure scripts are executable
 ENV PATH=/root/.local/bin:$PATH
